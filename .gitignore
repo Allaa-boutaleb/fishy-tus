@@ -1,0 +1,9 @@
+data/
+data_old/
+profiles/
+vectors/
+results/
+*.csv
+*.json
+*.log
+__pycache__/
