@@ -1,7 +1,7 @@
-# Something's Fishy in the Data Lake  
+# 🐟 Something's Fishy in the Data Lake  
 _Are Table Union Search Benchmarks Measuring Semantic Understanding?_  
 
-This repository contains the code to reproduce the baseline results (Hash, TFIDF, Count Vectorizers, and SBERT) presented in our study. Please note that this release is for our baselines only. For replication of other methods such as STARMIE, HEARTS, or TabSketchFM, refer to their respective repositories:  
+This repository contains the code to reproduce the baseline results (Hash, TFIDF, Count Vectorizers, and SBERT) presented in our study. Please note that this release includes **only our baseline implementations**. For other methods like STARMIE, HEARTS, or TabSketchFM, please refer to their respective repositories:
 
 - **STARMIE:** [megagonlabs/starmie](https://github.com/megagonlabs/starmie)  
 - **HEARTS:** [Allaa-boutaleb/HEARTS](https://github.com/Allaa-boutaleb/HEARTS)  
@@ -10,130 +10,136 @@ This repository contains the code to reproduce the baseline results (Hash, TFIDF
 ---
 
 <p align="center">
-    <a href="#getting-started"> Getting Started</a> • 
-</p>
-
-<p align="center">
-    <a href="#datasets">Datasets</a> • 
-    <a href="#license">License</a> •
-    <a href="#citation">Citation</a>
+    <a href="#rocket-getting-started">🚀 Getting Started</a> • 
+    <a href="#open_file_folder-datasets">📂 Datasets</a> • 
+    <a href="#bar_chart-profiling">📊 Profiling</a> • 
+    <a href="#scroll-license">📜 License</a> • 
+    <a href="#bookmark-citation">🔖 Citation</a>
 </p>
 
 ---
 
-## Overview
+## 🔍 Overview
 
-This repository provides a unified and clean implementation for evaluating Table Union Search benchmarks. The code is designed to work with a specific directory structure for the benchmarks and to quickly reproduce our experimental results on a variety of datasets. We have repackaged existing benchmarks to facilitate easier usage, but each benchmark requires some form of preprocessing to be fully compatible with our implementation.
+This repository provides a unified and clean implementation for evaluating Table Union Search benchmarks. The code supports a standardized structure across different datasets and enables reproducible experiments with minimal configuration.  
+
+We have repackaged all datasets in a unified format for **ease of use**. However, **original benchmark data must be processed and formatted** according to our schema before use — including file restructuring, query sampling, and in some cases additional cleaning.
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
-Follow these instructions to set up your environment, prepare the datasets, and run the experiments.
+Follow these steps to set up your environment and prepare the benchmarks.
 
-### 1. Create the Environment
+### 1. Set Up the Environment
 
-First, create and activate the Conda environment with the required Python version:
+Create and activate the environment:
 
 ```bash
 conda create -n tus_benchmarks python=3.12 -y
 conda activate tus_benchmarks
 ```
 
-Then, install the necessary dependencies:
+Install the dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Prepare the Benchmarks
+### 2. Download the Benchmarks
 
-Our code assumes the following structure for any benchmark named `benchmark_name`:
+> [!IMPORTANT]
+> 🧳 To quickly get started, download all the processed benchmarks from Zenodo: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15224451.svg)](https://doi.org/10.5281/zenodo.15224451). This archive includes all benchmarks preprocessed and formatted as required by this repository. All you have to do is extract them into the `data/` folder.
+
+Alternatively, you can obtain the **original datasets** from the authors’ repositories. However, **you will need to preprocess them**:
+
+- Convert them into our unified format (`datalake/`, `query/`, `benchmark.pkl`)
+- Sample query tables for **TUS-SMALL** and **TUS-LARGE**
+- Apply further cleaning and structure enforcement for **LakeBench OpenData** and **WebTable**
+
+Original links of benchmarks:
+
+- **SANTOS:** [northeastern-datalab/santos](https://github.com/northeastern-datalab/santos)
+- **TUS-SMALL / TUS-LARGE:** [RJMillerLab/table-union-search-benchmark](https://github.com/RJMillerLab/table-union-search-benchmark)
+- **PYLON:** [superctj/pylon](https://github.com/superctj/pylon/tree/main)
+- **UGEN-V1 / UGEN-V2:** [northeastern-datalab/gen](https://github.com/northeastern-datalab/gen)
+- **LB-OPENDATA / LB-WEBTABLE:** [RLGen/LakeBench](https://github.com/RLGen/LakeBench)
+
+Expected structure:
 
 ```
 data/
 └── benchmark_name/
-    ├── datalake/      # Contains CSV tables from the data lake
-    ├── query/         # Contains CSV query tables
-    └── benchmark.pkl  # Ground truth mapping
+    ├── datalake/      # CSV tables from the data lake
+    ├── query/         # CSV query tables
+    └── benchmark.pkl  # Python dict {query_name: [candidate_1, candidate_2, ...]}
 ```
 
-The `benchmark.pkl` file is a Python dictionary where:
-- **Key:** name of the query table (e.g., `query.csv`)
-- **Value:** list of unionable candidate table names (e.g., `[ "candidate_1.csv", "candidate_2.csv", ... ]`)
+📝 Notes:
+- `TUS-SMALL` and `TUS-LARGE` include the **sampled query subsets** used in our experiments, located under the `query/` directory. These were selected from the full benchmark to match our experimental setup.  
+  ➤ You can still access **all original queries** from both benchmarks in the `all_query/` folder available in the archives listed in [here](https://doi.org/10.5281/zenodo.15224451).
+  
+- `LB-OPENDATA` and `LB-WEBTABLE` have undergone **extensive preprocessing** to ensure consistency and usability:
+  - Tables from the data lake that are **not referenced** in the ground truth were removed.
+  - Ground truth entries pointing to **missing candidate tables** were also filtered out.
+  - For each query, the **query table itself was added as a candidate** to maintain consistency across benchmarks.
+  - For `LB-OPENDATA`, we additionally provide a **reduced version** where each table is truncated to a **maximum of 1,000 rows**, allowing for more efficient experimentation.
+### 3. Run Experiments
 
-**Note:**
-- The TUS and TUS-LARGE benchmarks already include the sampled queries used in our experiments (located under `query/`).
-- The LakeBench benchmarks (LB-OPENDATA/LB-WEBTABLE) have undergone additional preprocessing, which includes:
-  - Removal of tables not referenced in the ground truth.
-  - Removal of ground truth entries missing a corresponding CSV file.
-  - Adding the query table as a candidate to itself to standardize the unionable candidates.
-- For LB-OpenData, a smaller version is provided where each table is limited to 1K rows for computational efficiency.
-
-To quickly get started, download and extract the benchmarks into the `data/` folder using the provided link below:
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15224451.svg)](https://doi.org/10.5281/zenodo.15224451)
-
-Alternatively, you can download the original benchmarks from:
-
-- **SANTOS:** [northeastern-datalab/santos](https://github.com/northeastern-datalab/santos)
-- **TUS-SMALL/TUS-LARGE:** [RJMillerLab/table-union-search-benchmark](https://github.com/RJMillerLab/table-union-search-benchmark)
-- **PYLON:** [superctj/pylon](https://github.com/superctj/pylon/tree/main)
-- **UGEN-V1/UGEN-V2:** [northeastern-datalab/gen](https://github.com/northeastern-datalab/gen)
-- **LB-OPENDATA/LB-WEBTABLE:** [RLGen/LakeBench](https://github.com/RLGen/LakeBench)
-
-### 3. Run the Experiments
-
-To produce search results using a specified embedding approach on a given benchmark, run:
+To run a benchmark using the selected methods:
 
 ```bash
 python run.py BENCHMARK_NAME [--methods METHOD1 METHOD2 ...] [--k K_VALUE] [--limit LIMIT] [--exclude-self-matches]
 ```
 
-For example, to run experiments on the `santos` benchmark using Hash, TFIDF, Count Vectorizers, and SBERT with a top-10 candidate selection:
+Example:
 
 ```bash
 python run.py santos --methods hash tfidf count sbert --k 10
 ```
 
-The code will:
-- Generate embeddings for each method (saving files to the `vectors/` directory),
-- Execute search queries (saving results to the `results/` directory).
+The output will include:
+- Vector files in `vectors/`
+- Ranking results in `results/`
 
 ---
 
-## Datasets
+## 📂 Datasets
 
-The datasets used for benchmarking have been repackaged into a unified format to facilitate reproducibility. After extracting the benchmarks into the `data/` folder, each benchmark should adhere to the directory structure described above. Please refer to the individual benchmark documentation for any further preprocessing details.
+All datasets used in our study follow the same directory structure and format. If you use the provided Zenodo archive, everything will be ready to go. If using original datasets:
 
----
-
-## Profiling
-
-For those interested in analyzing the profile of a given benchmark in terms of data distribution and the overlap in ground truth unionable pairs, use the scripts located in the [`profiler/`](./profiler/) directory. Refer to the README inside the `profiler/` folder for detailed instructions.
+- Follow the format explained in [Getting Started](#getting-started)
+- Consult original documentation for preprocessing steps
 
 ---
 
-## License
+## 📊 Profiling
+
+You can analyze the structure of any benchmark (e.g., query-candidate overlaps, attribute statistics) using the scripts in the [`profiler/`](./profiler/) folder. See the README inside for usage examples.
+
+---
+
+## 📜 License
 
 This code is released under the [CC BY-NC-ND 4.0 License](LICENSE).  
-*You are free to copy, modify, and distribute this code for non-commercial purposes, subject to the terms of the license.*
+*You may copy, use, and share this code for **non-commercial** purposes with attribution.*
 
 ---
 
-## Citation
+## 🔖 Citation
 
-[1] A. Boutaleb, A. Almutawa, B. Amann, R. Angarita, and H. Naacke. HEARTS: Hypergraph-based Related Table Search. In ELLIS Workshop on Representation Learning and Generative Models for Structured Data, 2025.
-[2] G. Fan, J. Wang, Y. Li, D. Zhang, and R. J. Miller. STARMIE: Semantics-aware dataset discovery from data lakes. In Proceedings of the VLDB Endowment (PVLDB), 16(7):1726–1739, 2023.
-[3] Khatiwada, A., Kokel, H., Abdelaziz, I., et al. (2025) - TabSketchFM: Sketch-based Tabular Representation Learning for Data Discovery over Data Lakes. IEEE ICDE.
-[4] F. Nargesian, E. Zhu, K. Q. Pu, and R. J. Miller. TUS: Table union search on open data. In Proceedings of the VLDB Endowment (PVLDB), 11(7):813–825, 2018.
-[5] A. Khatiwada, G. Fan, R. Shraga, Z. Chen, W. Gatterbauer, R. J. Miller, and M. Riedewald. SANTOS: Relationship-based semantic table union search. In Proceedings of the ACM on Management of Data (SIGMOD), 1(1):1–25, 2023.
-[6] Y. Deng, C. Chai, L. Cao, Q. Yuan, S. Chen, Y. Yu, Z. Sun, J. Wang, J. Li, Z. Cao, K. Jin, C. Zhang, Y. Jiang, Y. Zhang, Y. Wang, Y. Yuan, G. Wang, and N. Tang. LakeBench: A Benchmark for Discovering Joinable and Unionable Tables in Data Lakes. In Proceedings of the VLDB Endowment, 17(8):1925–1938, 2024.
-[7] K. Pal, A. Khatiwada, R. Shraga, and R. J. Miller. ALT-GEN: Benchmarking Table Union Search using Large Language Models. In Proceedings of the VLDB Endowment, 2150:8097, 2024.
+Please cite our work and related benchmarks as follows:
+
+[1] A. Boutaleb, A. Almutawa, B. Amann, R. Angarita, and H. Naacke. HEARTS: Hypergraph-based Related Table Search. In *ELLIS Workshop on Representation Learning and Generative Models for Structured Data*, 2025.  
+[2] G. Fan, J. Wang, Y. Li, D. Zhang, and R. J. Miller. STARMIE: Semantics-aware dataset discovery from data lakes. In *Proceedings of the VLDB Endowment (PVLDB)*, 16(7):1726–1739, 2023.  
+[3] A. Khatiwada, G. Fan, R. Shraga, Z. Chen, W. Gatterbauer, R. J. Miller, and M. Riedewald. SANTOS: Relationship-based semantic table union search. In *Proceedings of the ACM on Management of Data (SIGMOD)*, 1(1):1–25, 2023.  
+[4] K. Pal, A. Khatiwada, R. Shraga, and R. J. Miller. ALT-GEN: Benchmarking Table Union Search using Large Language Models. In *Proceedings of the VLDB Endowment*, 2150:8097, 2024.  
+[5] Y. Deng, C. Chai, L. Cao, Q. Yuan, S. Chen, Y. Yu, Z. Sun, J. Wang, J. Li, Z. Cao, K. Jin, C. Zhang, Y. Jiang, Y. Zhang, Y. Wang, Y. Yuan, G. Wang, and N. Tang. LakeBench: A Benchmark for Discovering Joinable and Unionable Tables in Data Lakes. In *Proceedings of the VLDB Endowment*, 17(8):1925–1938, 2024.  
+[6] F. Nargesian, E. Zhu, K. Q. Pu, and R. J. Miller. TUS: Table union search on open data. In *Proceedings of the VLDB Endowment (PVLDB)*, 11(7):813–825, 2018.  
+[7] A. Khatiwada, H. Kokel, I. Abdelaziz, et al. TabSketchFM: Sketch-based Tabular Representation Learning for Data Discovery over Data Lakes. In *IEEE ICDE*, 2025.
 
 ---
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-We acknowledge the original authors and maintainers of the benchmarks used in this repository, as well as the developers of the various baseline methods. Your contributions have been invaluable to our research.
-
+We thank the creators and maintainers of all benchmarks and baseline models that made this research possible.
