@@ -1,6 +1,11 @@
 # 🐟 Something's Fishy in the Data Lake  
 _Are Table Union Search Benchmarks Measuring Semantic Understanding?_  
 
+<p align="center">
+  <img src="img/fishy.png" alt="Something's Fishy" width="500"/>
+</p>
+
+
 This repository contains the code to reproduce the baseline results (Hash, TFIDF, Count Vectorizers, and SBERT) presented in our study. Please note that this release includes **only our baseline implementations**. For other methods like STARMIE, HEARTS, or TabSketchFM, please refer to their respective repositories:
 
 - **STARMIE:** [megagonlabs/starmie](https://github.com/megagonlabs/starmie)  
