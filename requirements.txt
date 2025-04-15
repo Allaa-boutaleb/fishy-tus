@@ -1,0 +1,7 @@
+numpy==2.2.4
+pandas==2.2.3
+tqdm==4.67.1
+scikit-learn==1.6.1
+sentence_transformers==4.1.0
+faiss-cpu==1.10.0
+munkres==1.1.4

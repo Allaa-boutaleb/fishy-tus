@@ -1,4 +1,34 @@
 # run.py
+"""
+Table Embedding Benchmark Evaluation Tool
+
+This script runs embedding generation and evaluation benchmarks for tabular data.
+It supports various embedding methods (hash, count, tfidf, sbert) with configurable parameters.
+
+Usage:
+    python run.py BENCHMARK_NAME [--methods METHOD1 METHOD2 ...] [--k K_VALUE] 
+                  [--limit LIMIT] [--exclude-self-matches]
+
+Arguments:
+    BENCHMARK_NAME              Name of the benchmark directory under 'data/'
+    --methods                   List of embedding methods to evaluate (default: all available)
+    --k                         k value for evaluation metrics (default: 10)
+    --limit                     Limit number of parameter combinations per method (default: None)
+    --exclude-self-matches      Whether to exclude self matches in evaluation (default: False)
+
+Configuration:
+    Method configurations are loaded from config.py
+
+Directory Structure:
+    data/BENCHMARK_NAME/
+        - datalake/            : Contains all tables for embedding
+        - query/               : Contains query tables
+        - benchmark.pkl        : Ground truth data
+
+Output:
+    - results/BENCHMARK_NAME/  : JSON files with evaluation results
+    - vectors/BENCHMARK_NAME/  : Pickle files with generated embeddings
+"""
 
 import os
 import sys
@@ -13,86 +43,20 @@ import argparse
 import re
 import hashlib
 
-# Import embedding extraction classes
+# Import configuration
 try:
-    from baselines.hash_extractor import HashEmbeddingExtractor
-    from baselines.sbert_extractor import SbertEmbeddingExtractor
-    from baselines.tfidf_extractor import TfidfEmbeddingExtractor
-    from baselines.count_extractor import CountEmbeddingExtractor
+    from config import METHOD_GRIDS
 except ImportError as e:
-    print(f"Error importing embedding extractors: {e}", file=sys.stderr)
-    print("Please ensure the 'baselines' package is correctly installed and accessible.", file=sys.stderr)
+    print(f"Error importing method grid configuration: {e}", file=sys.stderr)
+    print("Please ensure the 'configs/method_grids.py' file is correctly set up.", file=sys.stderr)
     sys.exit(1)
 
-# Import the evaluation function
-try:
-    # This assumes evaluate_benchmark_embeddings returns
-    # a dict like: {'metrics': {...}, 'detailed_results': {...}}
-    from evaluation import evaluate_benchmark_embeddings
-except ImportError as e:
-    print(f"Error importing evaluation function: {e}", file=sys.stderr)
-    print("Please ensure 'evaluation.py' is accessible and modified to return detailed results.", file=sys.stderr)
-    sys.exit(1)
+from baselines.hash_extractor import HashEmbeddingExtractor
+from baselines.sbert_extractor import SbertEmbeddingExtractor
+from baselines.tfidf_extractor import TfidfEmbeddingExtractor
+from baselines.count_extractor import CountEmbeddingExtractor
 
-# Benchmark-specific configurations
-BENCHMARK_CONFIGS = {
-    "santos": {"exclude_self_matches": False},
-    "tus": {"exclude_self_matches": False, "min_columns": 10, "exclude_roots": ["t_28dc8f7610402ea7"]},
-    "tusLarge": {"exclude_self_matches": False, "min_columns": 10, "exclude_roots": ["t_28dc8f7610402ea7"]},
-    "pylon": {"exclude_self_matches": False}
-}
-
-# METHOD_GRIDS specification
-METHOD_GRIDS = {
-    "hash": {
-        "embedding_params": {
-            "sample_size": [1000],
-            "n_features": [4096],
-            "include_column_names": [False]
-        },
-        "eval_params": {
-            "agg": ["max"],
-            "threshold": []  # Only used when agg="None"
-        }
-    },
-    "count": {
-        "embedding_params": {
-            "sample_size": [1000],
-            "max_features": [4096],
-            "ngram_range": [(1, 2)],
-            "include_column_names": [False]
-        },
-        "eval_params": {
-            "agg": ["max"],
-            "threshold": []  # Only used when agg="None"
-        }
-    },
-    "tfidf": {
-        "embedding_params": {
-            "sample_size": [1000],
-            "max_features": [4096],
-            "ngram_range": [(1, 2)],
-            "include_column_names": [False]
-        },
-        "eval_params": {
-            "agg": ["max"],
-            "threshold": []  # Only used when agg="None"
-        }
-    },
-    "sbert": {
-        "embedding_params": {
-            "sample_size": [20],
-            "model_name": ["all-mpnet-base-v2"],
-            "orientation": ["vertical"],
-            "deduplicate": [True]
-            # include_names and names_only handled separately
-        },
-        "eval_params": {
-            "agg": ["mean"],
-            "threshold": [0.1]  # Only used when agg="None"
-        }
-    }
-}
+from evaluation import evaluate_benchmark_embeddings
 
 # Cache for vectorizers to ensure consistency between runs
 VECTORIZER_CACHE = {}
@@ -186,12 +150,20 @@ def create_extractor(embedding_type, params):
             include_column_names=params.get("include_column_names", True)
         )
     elif embedding_type == "sbert":
+        # For SBERT, validate parameter combinations first
+        include_names = params.get("include_names", True)
+        names_only = params.get("names_only", False)
+        
+        # Skip invalid SBERT parameter combinations
+        if not SbertEmbeddingExtractor.is_valid_parameter_combination(include_names, names_only):
+            return None
+            
         return SbertEmbeddingExtractor(
             sample_size=params.get("sample_size", 10),
             model_name=params.get("model_name", "all-mpnet-base-v2"),
             orientation=params.get("orientation", "vertical"),
-            include_names=params.get("include_names", True),
-            names_only=params.get("names_only", False),
+            include_names=include_names,
+            names_only=names_only,
             deduplicate=params.get("deduplicate", True),
             batch_size=params.get("batch_size", 256)
         )
@@ -270,6 +242,9 @@ def generate_embeddings(benchmark_name, embedding_type, params, query_files=None
             
         elif embedding_type == "sbert":
             extractor = create_extractor(embedding_type, params)
+            if extractor is None:
+                raise ValueError(f"Invalid SBERT parameter combination: {params}")
+                
             # SBERT is stateful, so the model is cached internally
             extractor.process_directory(
                 input_dir=datalake_dir,
@@ -307,13 +282,13 @@ def generate_embeddings(benchmark_name, embedding_type, params, query_files=None
         print(f"Error loading newly generated embeddings: {e}", file=sys.stderr)
         raise
 
-def evaluate_single_combination(datalake_embeddings, query_embeddings, ground_truth, eval_params, benchmark_config, k_value, query_files=None):
+def evaluate_single_combination(datalake_embeddings, query_embeddings, ground_truth, eval_params, 
+                                exclude_self_matches, k_value, query_files=None):
     """Evaluates embeddings for a single combination of parameters."""
     start_time = time.time()
 
     agg = eval_params["agg"]
     threshold = eval_params.get("threshold")
-    exclude_self_matches = benchmark_config.get("exclude_self_matches", False)
 
     # Filter ground truth to only include queries that are in the query_files list
     if query_files:
@@ -360,7 +335,7 @@ def evaluate_single_combination(datalake_embeddings, query_embeddings, ground_tr
     return evaluation_output, evaluation_time
 
 def process_combination(benchmark_name, embedding_type, embed_params, eval_params, 
-                        benchmark_config, k_value, query_files):
+                        exclude_self_matches, k_value, query_files):
     """
     Processes a single combination of embedding and evaluation parameters.
     Saves results to JSON.
@@ -371,6 +346,7 @@ def process_combination(benchmark_name, embedding_type, embed_params, eval_param
         "embedding_params": embed_params,
         "evaluation_params": eval_params,
         "k_value": k_value,
+        "exclude_self_matches": exclude_self_matches,
         "status": "started",
         "error": None,
         "evaluation_results": None,  # Will hold dict from evaluate_single_combination
@@ -399,7 +375,7 @@ def process_combination(benchmark_name, embedding_type, embed_params, eval_param
         # 3. Evaluate
         eval_output, eval_time = evaluate_single_combination(
             datalake_embeddings, query_embeddings, ground_truth,
-            eval_params, benchmark_config, k_value, query_files
+            eval_params, exclude_self_matches, k_value, query_files
         )
 
         # Check if evaluation was skipped (e.g., missing threshold for agg='None')
@@ -434,11 +410,10 @@ def process_combination(benchmark_name, embedding_type, embed_params, eval_param
     except Exception as e_save:
         print(f"Error saving result JSON to {output_path}: {e_save}", file=sys.stderr)
 
-def run_benchmark(benchmark_name, embedding_types, k_value=10, limit_combinations=None):
+def run_benchmark(benchmark_name, embedding_types, exclude_self_matches=False, k_value=10, limit_combinations=None):
     """Runs the benchmark evaluation for specified methods and parameters."""
     print(f"\n{'='*80}\nStarting benchmark: {benchmark_name}\n{'='*80}")
 
-    benchmark_config = BENCHMARK_CONFIGS.get(benchmark_name, {"exclude_self_matches": False})
     query_files = get_query_files(benchmark_name)
     if not query_files:
         print(f"No query files found for benchmark {benchmark_name}. Exiting.", file=sys.stderr)
@@ -458,20 +433,7 @@ def run_benchmark(benchmark_name, embedding_types, k_value=10, limit_combination
         embed_grid = method_grid.get("embedding_params", {})
         eval_grid = method_grid.get("eval_params", {})
 
-        if embedding_type == "sbert":
-            base_params = {k: v for k, v in embed_grid.items() if k not in ["include_names", "names_only"]}
-            base_combinations = list(parameter_combinations(base_params))
-            valid_name_combinations = [
-                {"include_names": True, "names_only": False},
-                # {"include_names": True, "names_only": True},
-                # {"include_names": False, "names_only": False}
-            ]
-            embed_combinations = []
-            for base_combo in base_combinations:
-                for name_combo in valid_name_combinations:
-                    embed_combinations.append({**base_combo, **name_combo})
-        else:
-            embed_combinations = list(parameter_combinations(embed_grid))
+        embed_combinations = list(parameter_combinations(embed_grid))
 
         if limit_combinations and len(embed_combinations) > limit_combinations:
             print(f"Limiting {embedding_type} to {limit_combinations} random embedding parameter combinations.")
@@ -479,6 +441,18 @@ def run_benchmark(benchmark_name, embedding_types, k_value=10, limit_combination
             embed_combinations = [embed_combinations[i] for i in indices]
 
         for embed_params in embed_combinations:
+            # For SBERT, validate the parameter combination
+            if embedding_type == "sbert":
+                include_names = embed_params.get("include_names", True)
+                names_only = embed_params.get("names_only", False)
+                if not SbertEmbeddingExtractor.is_valid_parameter_combination(include_names, names_only):
+                    print(f"Skipping invalid SBERT parameter combination: include_names={include_names}, names_only={names_only}")
+                    continue
+                
+                if embed_params.get("orientation") == "horizontal" and "None" in eval_grid.get("agg", []):
+                    print(f"Warning: Horizontal SBERT does not support agg='None'. Filtering.")
+                    # Will filter appropriately below
+
             current_eval_combinations = []
             aggs = eval_grid.get("agg", [])
             thresholds = eval_grid.get("threshold", [])
@@ -509,7 +483,7 @@ def run_benchmark(benchmark_name, embedding_types, k_value=10, limit_combination
 
             for eval_params in current_eval_combinations:
                 all_combinations.append((benchmark_name, embedding_type, embed_params, eval_params,
-                                        benchmark_config, k_value, query_files))
+                                        exclude_self_matches, k_value, query_files))
                 total_combinations += 1
 
     print(f"\nTotal parameter combinations to process: {total_combinations}")
@@ -542,11 +516,9 @@ def main():
                         help='List of embedding methods to evaluate')
     parser.add_argument('--k', type=int, default=10, help='k value for evaluation metrics (P@k, R@k, etc.)')
     parser.add_argument('--limit', type=int, default=None, help='Limit the number of embedding parameter combinations per method (randomly selected, no seed)')
+    parser.add_argument('--exclude-self-matches', action='store_true', help='Whether to exclude self matches in evaluation')
 
     args = parser.parse_args()
-
-    if args.benchmark not in BENCHMARK_CONFIGS:
-        print(f"Warning: Benchmark '{args.benchmark}' not in BENCHMARK_CONFIGS. Ensure data exists. Using default config if needed.")
 
     valid_methods = []
     for method in args.methods:
@@ -562,6 +534,7 @@ def main():
     run_benchmark(
         benchmark_name=args.benchmark,
         embedding_types=valid_methods,
+        exclude_self_matches=args.exclude_self_matches,
         k_value=args.k,
         limit_combinations=args.limit
     )

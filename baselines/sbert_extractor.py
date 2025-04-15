@@ -36,7 +36,7 @@ class SbertEmbeddingExtractor(AbstractEmbeddingExtractor):
             model_name: Name of the SentenceTransformer model to use
             orientation: "vertical" (column-wise) or "horizontal" (row-wise)
             include_names: Whether to include column names
-            names_only: Whether to only use column names
+            names_only: Whether to only use column names (only applies when include_names=True)
             deduplicate: Whether to deduplicate values before sampling
             batch_size: Batch size for sentence transformer encoding
         """
@@ -44,11 +44,28 @@ class SbertEmbeddingExtractor(AbstractEmbeddingExtractor):
         self.sample_size = sample_size
         self.model_name = model_name
         self.orientation = orientation
+        
+        # Validate parameter combinations
         self.include_names = include_names
-        self.names_only = names_only
+        # names_only can only be True if include_names is True
+        self.names_only = names_only if include_names else False
+        
         self.deduplicate = deduplicate
         self.batch_size = batch_size
         self.model = None
+        
+    @staticmethod
+    def is_valid_parameter_combination(include_names: bool, names_only: bool) -> bool:
+        """
+        Check if the parameter combination is valid:
+        - include_names=True, names_only=True: Valid
+        - include_names=True, names_only=False: Valid
+        - include_names=False, names_only=True: Invalid
+        - include_names=False, names_only=False: Valid
+        """
+        if not include_names and names_only:
+            return False
+        return True
         
     def load_model(self):
         """Load the SentenceTransformer model if not already loaded."""
@@ -335,7 +352,7 @@ if __name__ == "__main__":
     if args.names_only and args.orientation == "horizontal":
         print("Info: Using --names_only with --orientation horizontal will embed only the table header.")
     if args.names_only and not args.include_names:
-        print("Warning: --names_only implies --include_names. Ignoring --no-include_names.")
+        print("Warning: --names_only requires --include_names. Setting --include_names=True.")
         args.include_names = True  # Force include_names if names_only is set
 
     extractor = SbertEmbeddingExtractor(
