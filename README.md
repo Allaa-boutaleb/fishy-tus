@@ -1,5 +1,4 @@
-# 🐟 Something's Fishy in the Data Lake  
-_Are Table Union Search Benchmarks Measuring Semantic Understanding?_  
+# 🐟 Something's Fishy in the Data Lake: _A Critical Re-evaluation of Table Union Search Benchmarks_
 
 <p align="center">
   <img src="img/fishy.png" alt="Something's Fishy" width="500"/>
