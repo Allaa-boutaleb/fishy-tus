@@ -53,7 +53,7 @@ pip install -r requirements.txt
 ### 2. Download the Benchmarks
 
 > [!IMPORTANT]
-> 🧳 To quickly get started, download all the processed benchmarks from Zenodo: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15224451.svg)](https://doi.org/10.5281/zenodo.15224451). This archive includes all benchmarks preprocessed and formatted as required by this repository. All you have to do is extract them into the `data/` folder.
+> 🧳 To quickly get started, download all the processed benchmarks from Zenodo: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15499092.svg)](https://doi.org/10.5281/zenodo.15499092). This archive includes all benchmarks preprocessed and formatted as required by this repository. All you have to do is extract them into the `data/` folder.
 
 Alternatively, you can obtain the **original datasets** from the authors’ repositories. However, **you will need to preprocess them**:
 
