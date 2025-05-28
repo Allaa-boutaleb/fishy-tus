@@ -132,8 +132,21 @@ This code is released under the [CC BY-NC-ND 4.0 License](LICENSE).
 
 ## 🔖 Citation
 
-Please cite our work and related benchmarks as follows:
+Please cite our work as follows:
 
+```
+@misc{boutaleb2025somethingsfishydatalake,
+      title={Something's Fishy In The Data Lake: A Critical Re-evaluation of Table Union Search Benchmarks}, 
+      author={Allaa Boutaleb and Bernd Amann and Hubert Naacke and Rafael Angarita},
+      year={2025},
+      eprint={2505.21329},
+      archivePrefix={arXiv},
+      primaryClass={cs.IR},
+      url={https://arxiv.org/abs/2505.21329}, 
+}
+```
+
+Other relevant citations:
 [1] A. Boutaleb, A. Almutawa, B. Amann, R. Angarita, and H. Naacke. HEARTS: Hypergraph-based Related Table Search. In *ELLIS Workshop on Representation Learning and Generative Models for Structured Data*, 2025.  
 [2] G. Fan, J. Wang, Y. Li, D. Zhang, and R. J. Miller. STARMIE: Semantics-aware dataset discovery from data lakes. In *Proceedings of the VLDB Endowment (PVLDB)*, 16(7):1726–1739, 2023.  
 [3] A. Khatiwada, G. Fan, R. Shraga, Z. Chen, W. Gatterbauer, R. J. Miller, and M. Riedewald. SANTOS: Relationship-based semantic table union search. In *Proceedings of the ACM on Management of Data (SIGMOD)*, 1(1):1–25, 2023.  
@@ -146,4 +159,4 @@ Please cite our work and related benchmarks as follows:
 
 ## 🙏 Acknowledgments
 
-We thank the creators and maintainers of all benchmarks and baseline models that made this research possible.
+We would like to sincerely thank the all creators and maintainers of the benchmarks and models used in our study, which made this research possible.
