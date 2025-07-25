@@ -135,14 +135,26 @@ This code is released under the [CC BY-NC-ND 4.0 License](LICENSE).
 Please cite our work as follows:
 
 ```
-@misc{boutaleb2025somethingsfishydatalake,
-      title={Something's Fishy In The Data Lake: A Critical Re-evaluation of Table Union Search Benchmarks}, 
-      author={Allaa Boutaleb and Bernd Amann and Hubert Naacke and Rafael Angarita},
-      year={2025},
-      eprint={2505.21329},
-      archivePrefix={arXiv},
-      primaryClass={cs.IR},
-      url={https://arxiv.org/abs/2505.21329}, 
+@inproceedings{boutaleb-etal-2025-somethings,
+    title = "Something{'}s Fishy in the Data Lake: A Critical Re-evaluation of Table Union Search Benchmarks",
+    author = "Boutaleb, Allaa  and
+      Amann, Bernd  and
+      Naacke, Hubert  and
+      Angarita, Rafael",
+    editor = "Chang, Shuaichen  and
+      Hulsebos, Madelon  and
+      Liu, Qian  and
+      Chen, Wenhu  and
+      Sun, Huan",
+    booktitle = "Proceedings of the 4th Table Representation Learning Workshop",
+    month = jul,
+    year = "2025",
+    address = "Vienna, Austria",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2025.trl-1.7/",
+    pages = "71--85",
+    ISBN = "979-8-89176-268-8",
+    abstract = "Recent table representation learning and data discovery methods tackle table union search (TUS) within data lakes, which involves identifying tables that can be unioned with a given query table to enrich its content. These methods are commonly evaluated using benchmarks that aim to assess semantic understanding in real-world TUS tasks. However, our analysis of prominent TUS benchmarks reveals several limitations that allow simple baselines to perform surprisingly well, often outperforming more sophisticated approaches. This suggests that current benchmark scores are heavily influenced by dataset-specific characteristics and fail to effectively isolate the gains from semantic understanding. To address this, we propose essential criteria for future benchmarks to enable a more realistic and reliable evaluation of progress in semantic table union search."
 }
 ```
 
